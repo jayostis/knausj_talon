@@ -1,0 +1,7 @@
+# Ignore all auto-converted CSV files
+*.csv-converted-to-talon-list
+
+# These CSV files are tracked in the custom branch:
+# - abbreviations.csv
+# - file_extensions.csv
+# - words_to_replace.csv
