@@ -6,6 +6,8 @@ __pycache__
 # we highly recommended against removing the private folder from the gitignore file
 # the directory is used to store sensitive information such as contacts
 /private
+# generated per-machine by core/system_paths.py on first run
+core/system_paths-*.talon-list
 .vscode/settings.json
 .DS_Store
 *.bak

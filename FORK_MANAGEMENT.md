@@ -9,8 +9,11 @@ This file documents the setup and management of this forked Talon community repo
 - **upstream**: `git@github.com:talonhub/community.git` (official community repo)
 
 ### Branches
-- **main**: Clean mirror of upstream/main (no personal customizations)
-- **custom**: Working branch with tracked CSV customizations
+- **master**: Default branch; clean mirror of upstream (no personal customizations)
+- **custom**: Earlier working branch with tracked CSV customizations (superseded)
+- **feature/settings_customizations**: **Current daily driver.** A strict superset of
+  `custom` — it contains all of `custom`'s commits plus the newer entries
+  (`talon,talent`, `claude,cloud`, `claude,clad`, `close,clothes`) and the settings docs.
 
 ## Tracked Personal Customizations
 
@@ -36,41 +39,48 @@ The following CSV files in `settings/` contain personal customizations and are t
 ### Auto-Generated Files (Ignored)
 These files are automatically generated and should NOT be tracked:
 
-#### In `.git/info/exclude`:
+#### In the tracked root `.gitignore`:
 - `core/system_paths-*.talon-list` - Machine-specific paths (Desktop, Documents, etc.)
-- `settings/*.csv-converted-to-talon-list` - Compiled versions of CSV files
 
 #### In `settings/.gitignore`:
 - `*.csv-converted-to-talon-list` - Auto-converted CSV files for performance
 
+> **Do not put these rules in `.git/info/exclude`.** That file lives inside `.git`, so it is
+> never cloned — a rule placed there silently vanishes on the next machine. (This document
+> previously claimed the `system_paths` rule lived there; it did not survive, which is exactly
+> the failure mode described. It is now in the tracked root `.gitignore`.)
+
 ### Why These Are Ignored
 - **system_paths files**: Different on each machine (contain machine-specific paths)
-- **csv-converted files**: Auto-generated from CSV sources, regenerated on Talon startup
+- **csv-converted files**: Auto-generated from CSV sources, regenerated on Talon startup.
+  Note these are only produced for *legacy* CSVs. `words_to_replace.csv`,
+  `abbreviations.csv`, and `file_extensions.csv` are deliberately never converted — see
+  `migration_helpers/migration_helpers.py:36-37`.
 
 ## Workflow Commands
 
 ### Daily Work
 ```bash
-# Always work in the custom branch
+# Always work in the daily-driver branch
 cd community
-git checkout custom
+git checkout feature/settings_customizations
 ```
 
 ### Updating from Upstream Community
 ```bash
-# 1. Update main branch from upstream
-git checkout main
-git pull upstream main
+# 1. Update master from upstream
+git checkout master
+git pull upstream master
 
-# 2. Push updated main to your fork (optional, for backup)
-git push origin main
+# 2. Push updated master to your fork (optional, for backup)
+git push origin master
 
-# 3. Merge updates into your custom branch
-git checkout custom
-git merge main
+# 3. Merge updates into the daily driver
+git checkout feature/settings_customizations
+git merge master
 
-# 4. Push updated custom branch
-git push origin custom
+# 4. Push it back
+git push origin feature/settings_customizations
 ```
 
 ### Handling CSV Changes
@@ -78,17 +88,17 @@ git push origin custom
 # After modifying CSV files
 git add settings/*.csv
 git commit -m "Update abbreviations/file extensions/words"
-git push origin custom
+git push origin feature/settings_customizations
 ```
 
 ### Syncing Between Machines
 ```bash
 # Machine 1: After making changes
-git push origin custom
+git push origin feature/settings_customizations
 
 # Machine 2: Pull changes
-git checkout custom
-git pull origin custom
+git checkout feature/settings_customizations
+git pull origin feature/settings_customizations
 ```
 
 ## Conflict Resolution
@@ -124,9 +134,9 @@ git commit -m "Merge upstream, preserve customizations"
 ## Important Notes
 
 ### Branch Usage
-- **Never commit directly to main** - Keep it clean for upstream updates
-- **Always work in custom branch** - Your daily driver with customizations
-- **CSV customizations are safe** - Only exist in custom branch
+- **Never commit directly to master** - Keep it clean for upstream updates
+- **Always work in `feature/settings_customizations`** - Your daily driver
+- **CSV customizations are safe** - They do not exist on `master`
 
 ### Fork Naming
 - Fork is named `knausj_talon` on GitHub (historical name)
@@ -140,25 +150,36 @@ git commit -m "Merge upstream, preserve customizations"
 
 ## Setup Summary (For New Machines)
 
-```bash
-# Clone your fork
-git clone git@github.com:jayostis/knausj_talon.git community
-cd community
+Talon must already be installed, launched once (accept the license agreement), and have a
+speech engine selected from the tray icon (**Speech Recognition → Conformer**). The model is
+a separate several-hundred-MB download and is *not* part of the installer.
 
-# Add upstream remote
-git remote add upstream git@github.com:talonhub/community.git
+Both repos are cloned directly into the Talon user directory, as siblings:
 
-# Checkout custom branch
-git checkout custom
+```powershell
+# Windows: Talon user dir is %APPDATA%\talon\user
+cd $env:APPDATA\talon\user
 
-# You're ready to go!
+# 1. The community fork, on the daily-driver branch
+git clone --branch feature/settings_customizations git@github.com:jayostis/knausj_talon.git community
+git -C community remote add upstream git@github.com:talonhub/community.git
+
+# 2. Personal command set, a SIBLING of community (not nested inside it)
+git clone git@github.com:jayostis/my_talon.git my_talon
 ```
+
+Quit and relaunch Talon, then check `%APPDATA%\talon\talon.log` for errors.
 
 ## File Locations
 
-- Main directory: `C:\Users\Jay\AppData\Roaming\talon\user\community`
-- Personal customizations: `mine/` directory (separate from community)
-- CSV settings: `community/settings/*.csv` (in custom branch)
+- Community fork: `C:\Users\Jay\AppData\Roaming\talon\user\community`
+- Personal customizations: `C:\Users\Jay\AppData\Roaming\talon\user\my_talon`
+  (repo `jayostis/my_talon`, branch `main` — a sibling of `community`, not nested)
+- CSV settings: `community/settings/*.csv` (on `feature/settings_customizations`)
+
+`my_talon` depends on `community`: its `settings.talon` sets `user.mode_indicator_show` and
+`user.mouse_enable_pop_click`, which are declared by community's `plugin/mode_indicator/`
+and `plugin/mouse/`. Loading `my_talon` alone will error.
 
 ## Created: 2025-11-13
 
